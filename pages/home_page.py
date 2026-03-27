@@ -85,8 +85,14 @@ class HomePage(BasePage, SubscriptionMixin):
     
     def go_to_products_page(self):
         logger.info("Navigating to Products page")
+        products_url = f"{self.UAT_URL.rstrip('/')}/products"
         self.safe_click(self.page.get_by_role(**self.PRODUCTS_LINK))
         self.page.wait_for_url("**/products", timeout=60000)
+        # Any hash (#google_vignette, etc.) breaks the products sidebar; common on GitHub-hosted runners.
+        base_products = self.page.url.split("#", 1)[0].rstrip("/")
+        if base_products.endswith("/products") and "#" in self.page.url:
+            logger.info("Reloading products page to drop URL fragment")
+            self.page.goto(products_url, wait_until="domcontentloaded", timeout=60000)
         return ProductsPage(self.page)
     
     def go_to_cart(self):

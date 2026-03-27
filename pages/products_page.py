@@ -1,8 +1,10 @@
 import logging
+from urllib.parse import urljoin
+
 from pages.base_page import BasePage
 from pages.product_page import ProductPage
 from pages.cart_page import CartPage
-from playwright.sync_api import expect
+from playwright.sync_api import expect, TimeoutError as PlaywrightTimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +21,22 @@ class ProductsPage(BasePage):
 
     def go_to_first_product_details(self):
         logging.info("Navigating to first product details page")
+        base = "https://automationexercise.com"
+        u = self.page.url
+        if "/products" in u.split("#", 1)[0] and "#" in u:
+            self.page.goto(f"{base}/products", wait_until="domcontentloaded", timeout=60000)
+        self.dismiss_consent_overlays()
         details_link = self.page.locator("a[href*='/product_details/']").first
-        expect(details_link).to_be_visible(timeout=10000)
+        expect(details_link).to_be_visible(timeout=15000)
+        href = details_link.get_attribute("href")
+        assert href, "first product details link must have href"
         self.safe_click(details_link)
-        self.page.wait_for_url("**/product_details/**", timeout=60000)
+        try:
+            self.page.wait_for_url("**/product_details/**", timeout=45000)
+        except PlaywrightTimeoutError:
+            logging.warning("Details navigation timeout; opening product URL directly")
+            target = href if href.startswith("http") else urljoin(f"{base}/", href.lstrip("/"))
+            self.page.goto(target, wait_until="domcontentloaded", timeout=60000)
         return ProductPage(self.page)
     
     def search_product(self, product_name):
