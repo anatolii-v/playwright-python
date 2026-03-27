@@ -19,7 +19,10 @@ class ProductsPage(BasePage):
 
     def go_to_first_product_details(self):
         logging.info("Navigating to first product details page")
-        self.safe_click(self.page.get_by_role("link", name=" View Product").first)
+        details_link = self.page.locator("a[href*='/product_details/']").first
+        expect(details_link).to_be_visible(timeout=10000)
+        self.safe_click(details_link)
+        self.page.wait_for_url("**/product_details/**", timeout=60000)
         return ProductPage(self.page)
     
     def search_product(self, product_name):

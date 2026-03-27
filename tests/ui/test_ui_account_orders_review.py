@@ -71,8 +71,10 @@ def test_tc_024_download_invoice_for_order(ensure_logged_in_user):
 def test_tc_025_submit_product_review(home_page, new_user):
     product_page = home_page.go_to_products_page().go_to_first_product_details()
     page = product_page.page
+    expect(page.locator("#name")).to_be_visible(timeout=10000)
     page.locator("#name").fill(new_user["name"])
     page.locator("#email").fill(new_user["email"])
     page.locator("#review").fill("Great product quality and fast delivery.")
-    page.get_by_role("button", name="Submit").click()
+    product_page.dismiss_consent_overlays()
+    product_page.safe_click(page.get_by_role("button", name="Submit"))
     expect(page.get_by_text("Thank you for your review.")).to_be_visible()

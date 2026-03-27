@@ -19,9 +19,10 @@ class ProductPage(BasePage):
         logging.info("Check product detail fields")
         expected_fields= "Category", "Availability", "Condition", "Brand"
         product_information_container = self.page.locator(self.PRODUCT_INFORMATION_CONTAINER)
+        expect(product_information_container).to_be_visible(timeout=10000)
         logging.info("Checking visibility of product title")
         product_name = product_information_container.get_by_role("heading")
-        expect (product_name).to_be_visible()
+        expect(product_name).to_be_visible()
         for field in expected_fields:
             logging.info(f"Checking visibility of {field} field")
             expect(product_information_container.filter(has_text=field)).to_be_visible()
