@@ -1,0 +1,102 @@
+name: UI & API Tests
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+
+jobs:
+  UI_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Prepare artifact directories
+        run: |
+          mkdir -p reports
+          mkdir -p test-results
+
+      - name: Run UI tests
+        id: smoke_or_ui_tests
+        continue-on-error: true
+        run: |
+          pytest -m "smoke or ui" \
+            --html=reports/html/report-ui.html \
+            --self-contained-html \
+            --tracing retain-on-failure \
+            --screenshot only-on-failure \
+            --reruns 3 --reruns-delay 2
+
+      - name: Upload UI reports
+        if: steps.smoke_or_ui_tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: reports/
+
+      - name: Upload UI artifacts
+        if: steps.smoke_or_ui_tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-traces
+          path: test-results/
+
+      - name: Fail job if tests failed
+        if: steps.smoke_or_ui_tests.outcome == 'failure'
+        run: exit 1
+
+
+  API_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Prepare artifact directories
+        run: |
+          mkdir -p reports
+          mkdir -p test-results
+
+      - name: Run API tests
+        id: api_tests
+        continue-on-error: true
+        run: |
+          pytest -m api -n auto \
+            --html=reports/html/report-api.html \
+            --self-contained-html \
+            --reruns 3 --reruns-delay 2
+
+      - name: Upload API reports
+        if: steps.api_tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: reports/
+
+      - name: Fail job if tests failed
+        if: steps.api_tests.outcome == 'failure'
+        run: exit 1

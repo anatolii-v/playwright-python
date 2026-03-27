@@ -1,0 +1,7 @@
+faker>=40.4.0
+pytest-html>=4.1.1
+pytest-playwright>=0.7.2
+pytest-rerunfailures>=16.1
+pytest-xdist>=3.8.0
+retrying>=1.4.2
+ruff>=0.14.10

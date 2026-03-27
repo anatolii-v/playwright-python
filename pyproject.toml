@@ -1,0 +1,31 @@
+[project]
+name = "automation-exercise-via-playwright"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "faker>=40.4.0",
+    "pytest-html>=4.1.1",
+    "pytest-playwright>=0.7.2",
+    "pytest-rerunfailures>=16.1",
+    "pytest-xdist>=3.8.0",
+    "retrying>=1.4.2",
+    "ruff>=0.14.10",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = [
+    "-s",
+    "-v",
+    "--strict-markers",
+    "--html=reports/html/report.html",
+    "--self-contained-html",
+]
+testpaths = ["tests"]
+
+markers = ["smoke: critical smoke tests", "ui: UI tests", "api: API tests"]
+
+log_cli = true
+log_cli_level = "INFO"
