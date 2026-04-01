@@ -3,10 +3,13 @@ import uuid
 from pathlib import Path
 
 import pytest
-import requests
 from faker import Faker
 from pytest import Item
-from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError
+from playwright.sync_api import (
+    APIRequestContext,
+    Page,
+    TimeoutError as PlaywrightTimeoutError,
+)
 
 # Re-export shared user fixtures for UI suite.
 from fixtures.users import existing_user, new_user  # noqa: F401
@@ -100,6 +103,13 @@ def api_base_url():
 
 
 @pytest.fixture
+def api_context(playwright, api_base_url) -> APIRequestContext:
+    context = playwright.request.new_context(base_url=f"{api_base_url}/")
+    yield context
+    context.dispose()
+
+
+@pytest.fixture
 def account_payload_factory():
     def _make_payload(**overrides):
         unique_email = f"api_{uuid.uuid4().hex}@test.com"
@@ -129,19 +139,18 @@ def account_payload_factory():
 
 
 @pytest.fixture
-def created_account(api_base_url, account_payload_factory):
+def created_account(api_context, account_payload_factory):
     payload = account_payload_factory()
-    response = requests.post(f"{api_base_url}/createAccount", data=payload, timeout=20)
-    assert response.status_code == 200
+    response = api_context.post("createAccount", form=payload, timeout=20_000)
+    assert response.status == 200
     assert response.json().get("responseCode") == 201
 
     yield payload
 
-    try:
-        requests.delete(
-            f"{api_base_url}/deleteAccount",
-            data={"email": payload["email"], "password": payload["password"]},
-            timeout=20,
-        )
-    except requests.RequestException:
+    response = api_context.delete(
+        "deleteAccount",
+        form={"email": payload["email"], "password": payload["password"]},
+        timeout=20_000,
+    )
+    if response.status != 200:
         logging.warning("Cleanup deleteAccount request failed for %s", payload["email"])
